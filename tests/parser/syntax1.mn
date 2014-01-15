@@ -1,0 +1,14 @@
+{
+  int a = 1;
+  if(a) a += 2;
+  else a = 5;
+  print(a);
+
+  void myFunc(int i=3, int j=k)
+  { print(i,j); }
+
+  arr = { a b c d };
+
+  int j;
+  string s = "This is a string! In Sparta!";
+}

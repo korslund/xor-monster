@@ -1,0 +1,57 @@
+/* This is a grammar test file
+ */
+1+2;
+a+b;
+a=3;
+func();
+b = func(1,2,3);
+{}
+{1;func(2);}
+[1,a=b,c=d,[1,2,3]];
+array[0..$-2];
+x = -1;
+if(!b) -x;
+if(a) (b+1)-1;
+x.y.z(a,b.c);
+x[12].y.z[9] = a(1).b(2).c(3);
+++x;
+x++;
+--x--;
+int[] i;
+null func(int[] i);
+null func(int i[]);
+null func(int[1][2] i[3][4]);
+null[1] func(int[1] b[2], x[], c[5]);
+int i[];
+float[1][2][3] b[4][5][6];
+int[2] a, b[3], c[4][5];
+v func(...);
+v func(k, ...);
+v func(arr[] ...);
+v func(int i ...);
+v func(i,j,k ...);
+return;
+{ return x }
+if(x) {}
+if(int x) {}
+if(int x,y,z) {}
+if(int x=abcd) {}
+if(var[2] v[1][4] = [1,2,3]) {}
+for(;;) {}
+for(;exp) {}
+for(x; array) {}
+for(i=0; i<10; i++) {}
+for(int i=x, float j=y; i<10 && j<10; incFunc(i,j)) {}
+for(...;;[]) {}
+// Some real world usage examples
+for(i; 0..10) {}
+for(k,v; array) {}
+for(a,b,c; generator) {}
+// We can use ... as well, though it's kinda useless
+for(... ; generator) {}
+for(int[] x, int y[2], x ... ; generator) {}
+for(int i=0; i<10; i++) {}
+while(true) {}
+do x; while(y)
+do { blah } while(xyz < abc);
+while(func()) if(x) y;

@@ -1,0 +1,15 @@
+// test some numbers first
+1 22 123.4
+// now some more complicated stuff
+.23 0x34.4_564
+// this is not one number
+033..4
+// identifiers
+foo bar4 f3z fuzz
+// some expressions
+"expression" * 3 + 4 - 5
+// try some strings
+'abc' "def" '"' "'"
+// next, some keywords mixed with identifiers
+if elseif else
+

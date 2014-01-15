@@ -1,0 +1,7 @@
+int i = 3, j;
+println(j);
+int k = 123;
+println(k);
+println(i);
+println(k);
+println(i+j+k+9);

@@ -1,0 +1,7 @@
+println("string");
+string x;
+println(x);
+string a = "xyz";
+println(a);
+println("a"~"b");
+println("X" ~ a ~ "Z")

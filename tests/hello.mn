@@ -1,0 +1,3 @@
+println("Hello world!");
+printlns(1,2,3);
+printlns("Testing 1",2,3.0,["anybody","there?"]);

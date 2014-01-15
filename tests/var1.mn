@@ -1,0 +1,3 @@
+int i;
+int j=3, k=i, z=j;
+println(i,j,k,z);

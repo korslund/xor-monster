@@ -1,0 +1,90 @@
+/*
+  This example shows some member variables of builtin types.
+ */
+
+// Properties of numerical types
+println("Int properties:");
+println("Initial value     = ", int.init);
+println("Size (x4 bytes)   = ", int.sizeof);
+println("Bits              = ", int.bitsof);
+println("Smallest value    = ", int.min);
+println("Highest value     = ", int.max);
+println();
+
+println("Uint properties:");
+println("Initial value     = ", uint.init);
+println("Size (x4 bytes)   = ", uint.sizeof);
+println("Bits              = ", uint.bitsof);
+println("Smallest value    = ", uint.min);
+println("Highest value     = ", uint.max);
+println();
+
+println("Long properties:");
+println("Initial value     = ", long.init);
+println("Size (x4 bytes)   = ", long.sizeof);
+println("Bits              = ", long.bitsof);
+println("Smallest value    = ", long.min);
+println("Highest value     = ", long.max);
+println();
+
+println("Ulong properties:");
+println("Initial value     = ", ulong.init);
+println("Size (x4 bytes)   = ", ulong.sizeof);
+println("Bits              = ", ulong.bitsof);
+println("Smallest value    = ", ulong.min);
+println("Highest value     = ", ulong.max);
+println();
+
+// Floating point numbers have additional properties that describe
+// them
+println("Float properties:");
+println("Initial value     = ", float.init);
+println("Size (x4 bytes)   = ", float.sizeof);
+println("Bits              = ", float.bitsof);
+println("Smallest value    = ", float.min);
+println("Highest value     = ", float.max);
+// .inf and .infinity are both allowed and equivalent
+println("Float infinity    = ", float.inf);
+println("Float NaN         = ", float.nan);
+println("Digits precission = ", float.dig);
+println("Epsilon from 1    = ", float.epsilon);
+println("Mantissa bits     = ", float.mant_bits);
+println("Exponent bits     = ", float.exp_bits);
+println("Max 10 exponent   = ", float.max_10_exp);
+println("Min 10 exponent   = ", float.min_10_exp);
+println("Max 2 exponent    = ", float.max_exp);
+println("Min 2 exponent    = ", float.min_exp);
+println();
+
+println("Double properties:");
+println("Initial value     = ", double.init);
+println("Size (x4 bytes)   = ", double.sizeof);
+println("Bits              = ", double.bitsof);
+println("Smallest value    = ", double.min);
+println("Highest value     = ", double.max);
+println("Double infinity   = ", double.infinity);
+println("Double NaN        = ", double.nan);
+println("Digits precission = ", double.dig);
+println("Epsilon from 1    = ", double.epsilon);
+println("Mantissa bits     = ", double.mant_bits);
+println("Exponent bits     = ", double.exp_bits);
+println("Max 10 exponent   = ", double.max_10_exp);
+println("Min 10 exponent   = ", double.min_10_exp);
+println("Max 2 exponent    = ", double.max_exp);
+println("Min 2 exponent    = ", double.min_exp);
+println();
+println("Character properties:");
+println("Initial value     = ", char.init);
+println("Size (x4 bytes)   = ", char.sizeof);
+println("Bits              = ", char.bitsof);
+println();
+println("Boolean properties:");
+println("Initial value     = ", bool.init);
+println("Size (x4 bytes)   = ", bool.sizeof);
+println("Bits              = ", bool.bitsof);
+println();
+
+// You can use these on variables as well.
+int i; float f;
+println("i.init = ", i.init);
+println("f.bitsof = ", f.bitsof);

@@ -1,0 +1,48 @@
+// func1-3 work like in other C-like languages
+func1(int i, int j)
+{
+  printlns("func1",i,j);
+}
+
+func2(int i, int j=5)
+{
+  printlns("func2",i,j);
+}
+
+func3(int i=7, int j=9)
+{
+  printlns("func3",i,j);
+}
+
+// This isn't allowed in C
+func4(int i=2, int j)
+{
+  printlns("func4",i,j);
+}
+
+main()
+{
+  println("With all arguments present:");
+  func1(1, 2);
+  func2(1, 2);
+  func3(1, 2);
+  func4(1, 2);
+
+  println("\nWith only one parameter:");
+  func2(3);
+  func3(3);
+
+  println("\nWith no parameters:");
+  func3();
+
+  println("\nNaming all parameters:");
+  func1(j=10,i=20);
+  func2(j=10,i=20);
+  func3(j=10,i=20);
+  func4(j=10,i=20);
+
+  println("\nNaming one parameter:");
+  func2(i=30);
+  func3(i=30);
+  func4(j=30);
+}

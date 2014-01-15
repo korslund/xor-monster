@@ -1,0 +1,59 @@
+// Plain expressions
+1; 2; ((3)); "hello";
+[This,is,an, "array!"];
+
+// Assignments
+a=b; d+=5; "hello"='guy!';
+ipnum=192.168.1.22;
+
+// Code blocks
+{ a; b; }
+{ c; d }
+{{e}}
+
+// If statements
+if(a) b;
+if(a) b; else c;
+if(a) if(b) if(c) d;
+if(a) if(b) if(c) d; else e; else f; else g;
+if(someVar)
+{
+    someVar += 10;
+}
+else
+  someVar = 15;
+
+// Variable declaration
+int a;
+int b,c,d;
+{var x,y,z}
+int e=3, f, g="not an int";
+
+// Function declarations
+null func() {}
+var myfunc()
+{
+  print; i=3;
+}
+null func3(int i);
+var func(int i, float f=3.1, bool b=true, MyClass cls);
+
+// Function calls
+func();
+array[];
+val = sqrt(8);
+matrix[3][5] = func(13.4, xy, true);
+(someExpr[3])(data)(data2)[data3] = a()()()();
+
+// Function declarations with typeless parameters
+var func1(a);
+var func2(a,b)
+{
+  var func3(a,int b,float c,d) {}
+}
+
+// Weird stuff
+func(1,2,b=3,c=4, 5);
+
+// Expression as a type source
+func(1)[5] a,b,c;

@@ -1,0 +1,6 @@
+var a=1, b=2;
+printlns(a,b);
+a=3.1;
+printlns(a,b);
+b={1,2,3.3};
+printlns(a,b);

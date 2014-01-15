@@ -1,0 +1,57 @@
+// This file tests string escape codes and wysiwig mode in strings
+
+// Normal string
+printlns("Normal string:", "abcd");
+
+// Wysiwig string (can contain backslashes)
+printlns("\nTesting wysiwig mode");
+printlns(r"ab\cd");
+printlns(\"ab\cd");
+
+  //"); // fix syntax highlighting :)
+
+printlns("\nEscape codes in normal and wysiwig mode");
+printlns("a\nb", r"a\nb");
+printlns("\\", r"\\");
+
+// Strings containing quotation marks
+printlns("\nStrings containing quotation marks");
+printlns("abc""def", r"abc""def");
+printlns("abc\"def");
+printlns("abc'def");
+printlns('abc"def');
+
+// Multi-line strings
+printlns("
+This is
+a multi-line
+string
+");
+
+// \" does not work in wysiwig strings, so this terminates the
+// string. The end result is abc\
+printlns(\"abc\");
+
+printlns("\nOther escapes:");
+printlns("Bell: \\a == \a");
+printlns("Backspace\b");
+printlns("Form\fFeed");
+printlns("Carriage\rReturn");
+printlns("T\tAB");
+printlns("VT\vAB");
+printlns("ANSI escape: \e[32mtesting \e[31msome \e[33mcolors\e[0m");
+
+printlns("\nNumerical escape codes:");
+
+
+// As an alternative to writing actual unicode characters in your
+// source code, you can specify unicode hex codes by using \uXXXX or
+// \UXXXXXXXX, similar to eg. Python, C# and D.
+printlns("Unicode: \u03a6 \U3a8 O0\u25Efo.");
+
+// All numerical escape codes accept numbers that are shorter than
+// their definition. So \x accepts one or two digits, \U accepts
+// anything between 1 and 8 digits, and so on.
+printlns("Decimal: \65\66\67");
+printlns("Octal: \067\o74\0132");
+printlns("Hex: \x41\xa\x411");

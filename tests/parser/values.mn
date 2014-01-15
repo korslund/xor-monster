@@ -1,0 +1,36 @@
+/* This is a test of various literals and expressions */
+1, 2, 3,
+  12.34,
+  192.168.1.22,
+  .9 , 9. , 9.9 ,
+  "abc", 'def',
+  123, a, bc, "hello",
+  'this is a', "string",
+  13j, 123.456.789,
+
+// Arrays
+[],
+  [1, 2, 3,],
+  ([4,5,6,]),
+  [7, 8,(9),],
+  [[123],[1,2,3],5,9., "abc",'def',('ghi')],
+[ ], {}, [
+          ],
+  (a), [a,b,c,d], [e,f,g,h,i,],
+  (((a))), (([a, ((b))])),
+  [a, [b, [c, [d, e], f]], g, h],
+
+// Identifiers
+  abc, 123, ab123,
+  [123, abc, ident, (ident), ([(ident), 1, a]),],
+
+// Named array keys
+  [a=1],
+  [abc=2, 1, 2, 3, def=ghi],
+[
+ a=2,
+ b='hei',
+ c=(123.234),
+ d=whatever,
+ e="grouch",
+]

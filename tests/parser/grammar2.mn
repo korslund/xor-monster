@@ -1,0 +1,114 @@
+// More grammar tests
+private { null func() {} }
+private null func() {}
+private:
+null func() {}
+using(abc) { xyz; }
+using(abc):
+xyz;
+final null func();
+abstract final override native private static using(xyz) int func(int i) {}
+// These two are semantically equivalent:
+int i = myobject.func();
+{ using(myobject) int i = func(); }
+// reference test moved further down
+
+// Function literal
+func = { writeln($1, $2); for(i;3..8) writeln("  ",$[i]); };
+int i = $5;
+$2 == $[2];
+function();
+x = function():null;
+y = function(i,j):int { return i+j; };
+function(int[] i[]=3, ...) { return $; };
+// Differentiating between expression and non-expression function syntax
+{a}
+({a});
+v f();
+function():v;
+
+// Alias and import
+alias z = x.y.z;
+import z = x.y.z;
+alias a=x,b=y,c=z;
+import std.file, xor.base, my.own.module;
+import abc, def : my, own=name;
+import a = b : c = d;
+static import xyz;
+
+// Classes
+class A;
+class B {}
+class C : x;
+class D : x,y {}
+
+// As expressions
+x = class {};
+y = class : x {};
+func(class : base1 { null func(){} });
+
+// These are equivalent
+class A {} A a;
+(class {}) a;
+
+MyClass a = MyClass(x,y,z);
+int x = ({return $1*$1;})(2,4); // x = 8
+class Myname : depends.on, some(weird[shit]);
+MyType = class(T, N=1) { T x = N; T y = N*N; };
+x = class(...) {};
+class A(x, int i) : B(num=i);
+label:
+label2: hello();
+goto label;
+goto some.other[3].label;
+goto;
+a += a + b;
+a -= a - b;
+a *= a * b;
+a /= a / b;
+a %= b % c;
+a \= b \ c;
+a ~= b ~ c;
+x &&= x && b;
+y ||= y || c;
+break; continue; break x; continue y;
+case z:
+// C-style switch/case
+switch(exp)
+  {
+  case X: a; break;
+  case Y.x:
+  case "string":
+  case anyExpr()[]: x; break;
+  default:
+  };
+// Simpler Monster-style case:
+case(exp)
+{
+ X: a;
+ Y: { b; b2; }
+ any.expr: c;
+ (func(blah)[9])*3: if(d) e;
+ default:
+}
+// With variable declarations
+switch(var i=3) {}
+switch(var x = blah) {}
+case(int[] i[]) {}
+
+// Testing references:
+int @a, b;
+int a, @b;
+var @x = whatever;
+v f(@i, int @j, int[2] @k[1]);
+for(x, @y, int @z; generator) {}
+if(var @a = x) {}
+
+// Const:
+v f(const r, const int k, const l[], const @p);
+const r, x, @y=3;
+const int x, y, @z;
+const @r = whatever;
+static const pi = 3.14159265;
+3.5;
+"3.5";

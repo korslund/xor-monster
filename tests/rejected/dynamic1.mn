@@ -1,0 +1,25 @@
+class Test;
+
+/* We do want features similar to this at some point (post-1.0), but
+   this is probably not the right syntax.
+ */
+
+dynamic float var1 = 1.0;
+::onSet { doSomething(); }
+
+/* Even more confusing is the concept of dynamically interdependent
+   variables, where all the others update if you change one:
+ */
+
+dynamic
+{
+  float svar = dvar/2;
+  float dvar = svar*2;
+}
+svar = 1; // Implies dvar = 2
+dvar = 6; // Implies svar = 3
+
+/* This could make sense in some sort of declarative / functional
+   subvariant of the language though. Actually implementing this isn't
+   that hard, having it fit in as a language feature is harder.
+ */
