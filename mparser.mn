@@ -1,0 +1,895 @@
+/* This code is currently a non-operational (and non-tested)
+   prototype.
+
+   At the moment there is no functional compiler for this code, and
+   the parser does not even fully parse itself.
+
+   Conversion: currently at parseCase(). Anything below that is likely
+   to be invalid code as it's been auto-converted from C++.
+ */
+class MParser : ParserBase;
+
+var parseFile(bool code=true)
+{
+  var list = parseList(code);
+  if(!eof())
+    failWanted("statement or end of file");
+  return list;
+}
+
+// Based on the 'precedence climbing' algorithm.
+var parseBinop(int level = 0)
+{
+  // Get the next primary expression, if any
+  var exp = subExpr();
+  if(!exp) return null;
+
+  while(true)
+    {
+      var type = nextType();
+      int prec = type.precedence;
+
+      /* Check if we are done at this level. This auto-terminates at
+         the end of the expression, since 'next' will be negative.
+       */
+      if(next <= level)
+        return exp;
+
+      // Make the current expression the lhs in the result operator
+      // expression.
+      exp = huc.op(nextValue(), exp);
+      shift();
+
+      // Parse the rhs until we reach an operator with lower
+      // precedence than 'next'.
+      var rhs = parseBinop(prec);
+      if(!rhs && type != DDot) // (a..) is allowed
+        failWanted("primary expression");
+
+      if(rhs) exp ~= rhs;
+    }
+}
+
+var expr(nullFail=true)
+{
+  var exp = parseBinop();
+
+  if(!exp && nullFail)
+    failWanted("expression");
+
+  return exp;
+}
+
+var subExpr(isDot=false)
+{
+  var ret;
+
+  var type = nextType();
+
+  // Leaf expression
+  if(type in [Number, String, Identifier, True, False, This, Var, Dollar, Null])
+    ret = parseLeaf();
+
+  // (expr)
+  else if(type == Lparen)
+    {
+      req(Lparen);
+      ret = expr();
+      req(Rparen);
+    }
+
+  // [data]
+  else if(type == Lsquare)
+    ret = parseParens();
+
+  // {code}
+  else if(type == Lcurl)
+    {
+      ret = parseParens(true);
+      ret ~= "lambda";
+    }
+
+  // Function expression
+  else if(type == TT.Function)
+    ret = explicitFuncDef();
+
+  // Class definition
+  else if(type == TT.Class)
+    ret = parseClass(true);
+
+  // Unary operators
+  else if(type in [Not, Minus, DPlus, DMinus, DDot])
+    ret = parseUnary();
+
+  // No valid expression found
+  else
+    return null;
+
+  // Check for post-expression modifiers
+  while(!isDot)
+    {
+      type = nextType();
+
+      if(isNext(TT.Dot))
+        {
+          /* Handle members. This is basically a one-level
+             implementation of the same recursive precedence climbing
+             algorithm we use for binary operators. We don't treat
+             TT.Dot as a normal binary operator, because the
+             post-expressions below (calls and indices) bind stronger
+             than binary operators, giving the wrong result.
+
+             Eg: a.b.c[19] should parse as ((a.b).c)[19], not
+             (a.b).(c[19])
+
+             The isDot=true parameter to subExpr() plays the same role
+             as 'level' in parseBinop() and ensures we bind from the
+             left first.
+           */
+          ret = huc.op(".", ret, subExpr(true));
+        }
+
+      // Function call or array index?
+      else if(type == Lparen)
+        ret = huc.call(ret, parseParens());
+      else if(type == LSquare)
+        ret = huc.index(ret, parseParens());
+
+      // Post-fix unary operators
+      else if(isNext(DPlus))
+        ret = huc.postfixInc(ret);
+      else if(isNext(DMinus))
+        ret = huc.postfixDec(ret);
+
+      // Abort if nothing was done
+      else break;
+    }
+
+  assert(ret);
+  return ret;
+}
+
+var testIdent()
+{
+  if(nextType() != Identifier) return null;
+  return parseLeaf();
+}
+
+var parseLeaf()
+{
+  // Get next token without removing it
+  var tok = nextToken();
+
+  var ret = case(tok.type)
+    {
+    String: huc.String(tok.value);
+    Number: huc.number(tok.value);
+    Identifier: huc.ident(tok.value);
+    Dollar: huc.ident("__dollar");
+
+    /* Some tokens represent special symbols in the backend. For the
+       most part we can just add __ to the monster name to get the
+       right HUC symbol.
+     */
+    [True,False,This,Var,Null]: huc.ident("__" + tok.value);
+    Default: null;
+    };
+
+  if(!ret)
+    failWanted("leaf expression");
+
+  // Remove the token from the stream
+  shift();
+
+  if(tok.type == Dollar)
+    {
+      // Number after dollar - $1 is shorthand for $[1]
+      if(nextType() == Number)
+        ret = huc.index(ret, huc.data(parseLeaf()));
+
+      // Identifiers after dollar - $abc is shorthand for $.abc
+      else if(nextType() == Identifier)
+        ret = huc.op(".", ret, parseLeaf());
+    }
+
+  return ret;
+}
+
+var explicitFuncDef()
+{
+  req(Function, Lparen);
+  var parm = parseParamDefList();
+  req(Rparen);
+
+  // Parse type, if any
+  var type;
+  if(isNext(Colon))
+    type = expr();
+
+  if(!type) type = huc.ident("__var");
+
+  // Parse code block, if any
+  var block;
+  if(nextType() == Lcurl)
+    block = parseParens(true);
+
+  return huc.funcDef(type, parm, block, lambda=true);
+}
+
+var parseUnary()
+{
+  var type = nextType();
+  string val = nextValue();
+  assert(val);
+  shift();
+
+  if(type == DDot) val = "pre..";
+
+  return huc.op(val, expr);
+}
+
+var arrayElement()
+{
+  var ret = expr(false);
+  if(!ret) return null;
+
+  // Is this an assignment?
+  if(nextType() != Equals)
+    return ret;
+
+  /* Assignments in arrays do not refer to assignment expressions
+     (which do not exist in Monster), but rather to *name
+     definitions*. These use a distinct operator in the backend HUC
+     syntax. This basically means "make this a named member of this
+     array/list".
+
+     Note: Though we use the term "named" here, the index can be any
+     expression, not just a "name" in an identifier or a string. It's
+     up to the backend to determine if the values make sense
+     semantically.
+  */
+  ret = huc.define(ret);
+  shift();
+
+  // Add the right hand expression
+  return ret ~ expr();
+}
+
+var parseParens(isCode=false)
+{
+  var type = nextType();
+
+  // Types accepted
+  assert(type in [Lcurl, Lparen, Lsquare]);
+  req(type);
+  var list = parseList(isCode);
+  // The right bracket type is always left+1
+  req(type+1);
+
+  return list;
+}
+
+var parseList(bool isCode)
+{
+  var list = isCode ? huc.code() : huc.data();
+  while(!eof())
+    {
+      // Get the next element
+      var elem = isCode ? statement(false) : arrayElement();
+
+      // When there are no more valid elements, exit.
+      if(!elem) break;
+
+      // Add it to the list
+      list ~= elem;
+
+      // Data lists require commas separating elements
+      if(!isCode && !isNext(Comma))
+        break;
+    }
+}
+
+var parseAssign(var left)
+{
+  int type = nextType();
+
+  // Calling this here makes sure we get the linenum of the operator
+  // itself.
+  var ret = huc.op(nextValue(), left);
+  shift();
+
+  // Add the right hand expression
+  return ret ~ expr;
+}
+
+// Parse terminting ; or end of block. Returns true if one was
+// found.
+bool parseTerm()
+{
+  if(isNext(Semicolon)) return true;
+
+  // We allow an optional end of code block or stream as
+  // terminators as well (not swallowed)
+  if(eof() || nextType() == Rcurl)
+    return true;
+
+  return false;
+}
+
+var nonExprStat()
+{
+  // Check for special statement beginnings
+  int type = nextType();
+
+ case(nextType())
+   {
+   If: return parseIf();
+   For: return parseFor();
+   [Do,While]: return parseDoWhile();
+   Case: return parseCase();
+   Switch: return parseSwitch();
+   Class: return parseClass(false);
+   Lcurl: return parseParens(true);
+   [Import,Alias]: return parseImport();
+   [Using, Final, Native, Static, Private, Abstract, Override]:
+     return parseModifier();
+
+   Const:
+     {
+       var v = parseVarDefList(null, null, true);
+       if(!parseTerm())
+         failWanted("; or end of block after declaration");
+       return v;
+     }
+
+   [Return,Goto,Break,Continue]:
+     {
+       int line = nextLoc().line;
+       string op = nextValue();
+       shift();
+
+       var v = expr(false);
+       if(!parseTerm())
+         failWanted("; or end of block after " + op);
+       v = huc.make(op, v, line=line);
+       return v;
+     }
+   Default:
+   }
+
+ return null;
+}
+
+var parseSwitch()
+{
+  req(Switch, LParen);
+  var cond = parseCondition();
+  if(nextType() != Lcurl)
+    failWanted("{ after switch statement");
+  var block = parseParens(true);
+  isNext(Semicolon); // Allow optional ; after the block
+  return huc.Switch(cond, block);
+}
+
+var parseCase()
+{
+  req(Case);
+
+  // Check for full control statement
+  if(isNext(Lparen))
+    {
+      var cond = parseCondition();
+      if(!isNext(Lcurl))
+        failWanted("{ after case() statement");
+
+      // Parse special case() block
+      var block = huc.("code");
+
+      while(!isNext(Rcurl))
+        {
+          var exp = expr();
+          req(colon);
+          var stat = statement(false);
+          block ~= (huc.("case-label", exp, stat));
+
+          if(eof())
+            failLine("Unexpected end of file, expected } after case() block", cond);
+        }
+
+      isNext(semicolon); // Allow optional ; after the block
+      return huc.("case-block", cond, block);
+    }
+
+  // This is just a case label in a switch-block.
+  var exp = expr();
+  req(colon);
+  return huc.("case-label", exp);
+}
+
+var parseClass(bool isExpr)
+{
+  req(class);
+  var name = testIdent();
+
+  if(isExpr && name)
+    failLine("Class expressions must be anonymous", name);
+  else if(!isExpr && !name)
+    failWanted("class name");
+
+  var params;
+  if(isNext(Lparen))
+    {
+      params = parseParamDefList();
+      req(Rparen);
+    }
+
+  var inherits;
+  if(isNext(colon))
+    {
+      //inherits = huc.("data");
+      inherits = parseList(false);
+    }
+
+  var block;
+  if(nextType() == Lcurl)
+    block = parseParens(true);
+  else
+    {
+      if(!name)
+        failLine("Anonymous classes must have code blocks");
+      assert(name && !isExpr);
+
+      if(!isNext(semicolon))
+        failWanted("code block or ; at the end of class declaration");
+    }
+
+  return huc.("class", name, params, inherits, block);
+}
+
+var parseImport()
+{
+  int t = nextType();
+  shift();
+
+  var ret = huc.("vardeflist");
+  do
+    {
+      var main = expr();
+      var name;
+      if(isNext(equals))
+        {
+          name = main;
+          main = expr();
+        }
+
+      if(t == import)
+        {
+          var list;
+          if(isNext(colon))
+            {
+              /* Note: parseList() will gobble up all the commas in
+                 the rest of the statement, meaning that our outer
+                 do-while loop will never continue after this point.
+
+                 This means that you cannot add more main imports
+                 after a rename list.
+               */
+
+              //list = huc.("data");
+              list = parseList(false);
+            }
+          // The backend accepts one identifier and one data list, both
+          // optional
+          ret ~= (huc.("import", main, name, list));
+        }
+      else
+        {
+          assert(t == alias);
+          if(!name) failLine("Alias statement missing name", main);
+          ret ~= (huc.("alias", main, name));
+        }
+    }
+  while(isNext(comma));
+
+  isNext(semicolon);
+
+  return ret;
+}
+
+var parseModifier()
+{
+  int type = nextType();
+  var res = huc.("modifier", nextValue());
+  shift();
+
+  // Some types may need parameters
+  if(type == using)
+    {
+      req(Lparen);
+      res ~= (expr());
+      req(Rparen);
+    }
+
+  if(!isNext(colon))
+    res ~= (statement());
+
+  return res;
+}
+
+var parseDoWhile()
+{
+  // This handles both while and do-while loops
+  var stat;
+  std::string cmd = "while";
+  if(isNext(do))
+    {
+      stat = statement();
+      cmd = "do_while";
+      assert(stat);
+    }
+  req(while);
+  req(Lparen);
+  var cond = expr();
+  req(Rparen);
+  if(!stat) stat = statement();
+  // Swallow optional ending semicolons after do-while(). Old C coders
+  // may add them by habit :)
+  else isNext(semicolon);
+
+  return huc.(cmd, cond, stat);
+}
+
+var parseFor()
+{
+  req(for);
+  req(Lparen);
+
+  int line = nextLoc().line;
+
+  var first = parseParamDefList();
+  req(semicolon);
+  var second = expr(false);
+  var third;
+  bool isFor = false;
+  if(isNext(semicolon))
+    {
+      third = expr(false);
+      if(third)
+        third = exprStatement(third);
+      isFor = true;
+    }
+  req(Rparen);
+  var block = statement();
+  assert(first);
+  assert(block);
+  if(isFor)
+    {
+      // "for" form - for(a;b;c) statement;
+      assert(first);
+      if(!second) second = "empty";
+      if(!third) third = "empty";
+      return huc.("for", first, second, third, block);
+    }
+
+  // "foreach" form - for(a;b) statement;
+  assert(!third);
+  if(!second)
+    failLine("Empty array or iterator expression in for(;)", line);
+  return huc.("foreach", first, second, block);
+}
+
+var parseCondition()
+{
+  // Assumes the starting ( has already been lopped off
+  var cond = expr();
+
+  if(!isNext(Rparen))
+    {
+      // If another expression follows the condition, then treat this
+      // as a variable declaration instead.
+      cond = parseVarDefList(cond);
+      req(Rparen);
+    }
+  return cond;
+}
+
+var parseIf()
+{
+  var ret = huc.("if");
+
+  req(if);
+  req(Lparen);
+
+  ret ~= (parseCondition()); // If condition
+  ret ~= (statement());      // Then statement
+  if(isNext(else))
+    ret ~= (statement());    // Else statement
+
+  return ret;
+}
+
+var exprStatement(var expr, bool *changed)
+{
+  assert(expr);
+
+  int type = nextType();
+
+  bool chg = true;
+
+  // Assignments
+  if(type == equals || type == plusEq ||
+     type == minusEq || type == multEq ||
+     type == slashEq || type == remEq ||
+     type == idivEq || type == catEq ||
+     type == andEq || type == orEq)
+    expr = parseAssign(expr);
+
+  // No change was made
+  else
+    chg = false;
+
+  if(changed)
+    *changed = chg;
+
+  // Return the parsed expression or statement.
+  assert(expr);
+  return expr;
+}
+
+var parseParamDefList()
+{
+  var list = huc.("vardeflist");
+  while(!eof())
+    {
+      bool isConst = isNext(const);
+
+      if(isNext(dddot))
+        {
+          list ~= ("vararg");
+          break;
+        }
+
+      bool isRef = isNext(at);
+      var type;
+
+      if(!isRef)
+        {
+          // Get the next type. We're done when there's no type to parse.
+          type = expr(false);
+          if(!type)
+            break;
+
+          isRef = isNext(at);
+        }
+
+      // Parse the name, if there is one
+      var name = expr(false);
+
+      var &var = varParseCommon(list, type, name, isRef, isConst);
+      assert(var);
+
+      if(isNext(dddot))
+        {
+          var ~= ("vararg");
+          break;
+        }
+
+      if(!isNext(comma))
+        break;
+    }
+  return list;
+}
+
+var& varParseCommon(var &list, var type, var name, bool isRef, bool isConst)
+{
+  if(!name)
+    {
+      if(!type)
+        {
+          failWanted("variable type or name");
+          assert(0);
+        }
+
+      /* We've got a type but no name. What we have interpreted as
+         the type is actually the name, the type is missing.
+      */
+      name = type;
+      type = null;
+    }
+
+  // A missing type implicitly means 'var'
+  if(!type)
+    type = huc.("ident", "__var");
+
+  // Move post-name array indicators to the type
+  while(name[0] == "index")
+    {
+      assert(name.size() == 4);
+      var base = name[2];
+      var index = name[3];
+      name = base;
+      type = huc.("index", type, index);
+    }
+  assert(name);
+  if(name[0] != "ident")
+    failLine("Invalid parameter name", name);
+
+  var init;
+  if(isNext(equals))
+    init = expr();
+
+  assert(type);
+  assert(name);
+
+  var var = huc.("vardef",type,name,init);
+  if(isConst) var ~= ("const");
+  if(isRef) var ~= ("ref");
+  list ~= (var);
+  return list[list.size()-1];
+}
+
+var parseVarDefList(var otype, var name, bool isConst)
+{
+  assert(otype || isConst);
+
+  var list = huc.("vardeflist");
+
+  // If the type was missing, try parsing one anyway
+  if(!otype && nextType() != TT.At)
+    {
+      assert(!name);
+
+      var exp = expr(false);
+
+      if(nextType() == Tokens::identifier || nextType() == at)
+        // There is a name following this expression. So use 'exp' as
+        // the type.
+        otype = exp;
+      else
+        // Otherwise just dump whatever we found into the name
+        name = exp;
+    }
+
+  if(otype) list ~= (otype);
+
+  /* Complete the name expression (this is kinda hackish). If a name
+     has been specified at this point, it might have been parsed by
+     testIdent(). But that doesn't catch array indices following it,
+     eg. matrix[3][5].
+   */
+  if(name && name[0] == "ident")
+    while(nextType() == lsquare)
+      name = huc.("index", name, parseParens());
+
+  while(!eof() || name)
+    {
+      var type;
+
+      /* We can't repeat the original type expression, since it might
+         be a runtime expression with side effects (user objects may
+         be allowed as types.)
+
+         Instead, insert a special symbol that means 'repeat the
+         previous type in the VarDef set'.
+       */
+      if(otype) type = huc.("ident", "__type");
+
+      // Parse the next name
+      bool isRef = false;
+      if(!name)
+        {
+          if(isNext(at))
+            isRef = true;
+
+          name = expr(false);
+          if(!name)
+            failWanted("variable name");
+        }
+
+      varParseCommon(list, type, name, isRef, isConst);
+
+      if(!isNext(comma))
+        break;
+
+      name = null;
+    }
+  return list;
+}
+
+var parseDeclaration(const var &type, const var &name, bool &bodyFunc)
+{
+  assert(type && name);
+  bodyFunc = false;
+
+  // Is this a function declaration?
+  if(isNext(Lparen))
+    {
+      // Parse the params list
+      var parm = parseParamDefList();
+      req(Rparen);
+
+      // Parse code block, if any
+      var block;
+      if(nextType() == Lcurl)
+        {
+          block = parseParens(true);
+          bodyFunc = true;
+        }
+
+      return huc.("funcdef", type, name, parm, block);
+    }
+
+  // Not a function. Parse it as a variable declaration list.
+  return parseVarDefList(type, name);
+}
+
+var statement(bool nullFail)
+{
+  // Non-expression statement? These are non-terminated.
+  var stat = nonExprStat();
+  if(stat) return stat;
+
+  // Try parsing an expression
+  stat = expr(false);
+  // Was anything parsed?
+  if(!stat)
+    {
+      if(nullFail)
+        failWanted("statement");
+
+      return null;
+    }
+
+  /* Check for labels. Labels are single identifiers followed by a
+     colon.
+   */
+  if(stat[0] == "ident" && isNext(colon))
+    return huc.("label", stat);
+
+  // See if we can add anything to the expression (such as an
+  // assignment)
+  bool changed = false;
+  stat = exprStatement(stat, &changed);
+  assert(stat);
+
+  /* If the value parsed is followed by a terminator, then we're
+     done. This is true whether or not exprStatement() did anything
+     to our expression.
+  */
+  if(parseTerm())
+    return stat;
+
+  /* So we've got something beginning with an expression, and it
+     hasn't terminated yet.
+
+     If changed=false, then this wasn't an assignment or other
+     special expression statement. It MIGHT be a declaration.
+  */
+  if(!changed)
+    {
+      // Set to true if the parsed declaration ended in a function
+      // body (meaing a {} block - not terminated by a semicolon.)
+      bool bodyFunc = false;
+
+      // If what follows is an '@', then jump directly to variable
+      // parsing.
+      if(nextType() == at)
+        stat = parseVarDefList(stat);
+
+      else
+        {
+          // Test for following name expression
+          var exp2 = testIdent();
+          if(exp2)
+            // May be either a variable or function declaration
+            stat = parseDeclaration(stat, exp2, bodyFunc);
+        }
+
+      // Return if the declaration was terminated properly
+      if(parseTerm() || bodyFunc)
+        return stat;
+    }
+
+  // No terminator found. Arnold is not pleased.
+  failWanted("; or end of block after statement");
+}
