@@ -1,0 +1,8 @@
+// C style for with no type (initializer required to determine type)
+for(i=0; i<10; i++) println(i);
+
+/* This should probably be disabled. The init expression should either
+   be an explicit vardef, or a regular exprstatement / assignment. The
+   traditional for(;;) format should be identical to C to avoid
+   confusion.
+ */

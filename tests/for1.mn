@@ -1,0 +1,2 @@
+// C-style for (notice i does not need an initializer)
+for(int i; i<10; i++) println(i);

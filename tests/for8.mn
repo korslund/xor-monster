@@ -1,0 +1,4 @@
+// Foreach for, key/value pair
+var array = [0..10];
+for(k,v in array) printlns(k,"=",i);
+for(k,v in [a=1,b='hello','c'=[1,2,3]]) printlns(k,"=",v);

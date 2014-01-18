@@ -1,0 +1,2 @@
+// Range-based for without type
+for(i=0..10) println(i);

@@ -546,6 +546,14 @@ var parseFor()
 
   int line = nextLoc().line;
 
+  /* TODO: init expression for C-style for can be one of three cases:
+
+     - variable definition (with EXPLICIT type required)
+     - assignment statement
+     - any expression
+
+     We have also not entirely decided on the foreach-style syntax.
+   */
   var first = parseParamDefList();
   req(semicolon);
   var second = expr(false);

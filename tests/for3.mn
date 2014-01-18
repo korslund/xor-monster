@@ -1,0 +1,2 @@
+// Range-based for with type
+for(int i=0..10) println(i);

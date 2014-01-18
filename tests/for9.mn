@@ -1,0 +1,5 @@
+/* This should not work in any case. With a C-style for syntax, the
+   init expression should simply fail with "unknown identifier i".
+ */
+for(i; i<10; i++) println(i);
+
