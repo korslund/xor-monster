@@ -1,0 +1,38 @@
+/* This is a "meta" test script. It is executed like any other test
+   script when you run testy, but it accesses the Testy API itself to
+   add additional tests to the queue.
+
+   The tests added here test the parser only. The output is the raw
+   HUC output from the parser, in JSON format. The scripts are not
+   further compiled and executed.
+
+   The test set includes all the normal tests (this file included),
+   pluss all the files in the parser/ subdirectory. Output is written
+   to a separate subdir as specified below.
+
+   NOTE: None of the libraries, APIs or functions used here actually
+   exist; this is pure top-down design. This file is expected to be
+   adjusted later as the real APIs are implemented.
+ */
+
+/* Provide a custom test runner that overrides the default
+   "compile-and-execute" behavior. We only want to parse files and
+   spit out the HUC, in JSON format.
+ */
+void testRunner(stream file)
+{
+  var huc = XOR.fileToHUC(file);
+  println(huc.asJSON);
+}
+
+/* Note: Testy always assumes paths are relative to the running
+   scripts working directory, unless otherwise specified.
+ */
+
+path outdir = "output_parser";
+
+// Add all normal tests to the parser test set
+Testy.addToQueue(".", outdir=outdir, runner=testRunner);
+
+// Add specific parser-only tests
+Testy.addToQueue("parser/", outdir=outdir, runner=testRunner);

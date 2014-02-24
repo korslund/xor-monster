@@ -1,0 +1,33 @@
+var array[];
+{
+  int A;
+  for(i=0..5)
+    {
+      A = i;
+      int B = i;
+      array[i] = { println("A=",A," B=",B) }
+    }
+
+  A = 13;
+  println("A is now: ", A);
+}
+for(i=0..5) array[i]();
+
+/*
+A is now: 13
+A=13 B=0
+A=13 B=1
+A=13 B=2
+A=13 B=3
+A=13 B=4
+ */
+
+for(i=0..5) println("A=", array[i].data.A, " B=", array[i].data.B);
+
+/*
+A=13 B=0
+A=13 B=1
+A=13 B=2
+A=13 B=3
+A=13 B=4
+*/
