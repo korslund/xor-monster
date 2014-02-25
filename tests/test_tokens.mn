@@ -1,0 +1,25 @@
+/* This is a "meta" test script. It is executed like any other test
+   script when you run testy, but it accesses the Testy API itself to
+   add additional tests to the queue.
+
+   This runs tokenizer tests. For more info on how this works, see
+   test_parser.mn.
+ */
+
+void testRunner(stream file)
+{
+  var tokens = XOR.fileToTokens(file);
+  XOR.debugPrintTokens(tokens);
+}
+
+path outdir = "output_tokens";
+
+var dirs =
+  [
+   ".",         // Include all normal tests
+   "parser/",   // Add parser tests
+   "tokens/"    // Add token tests
+   ];
+
+// Add to test queue
+Testy.addToQueue(dir=dirs, outdir=outdir, runner=testRunner);

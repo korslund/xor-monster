@@ -31,8 +31,11 @@ void testRunner(stream file)
 
 path outdir = "output_parser";
 
-// Add all normal tests to the parser test set
-Testy.addToQueue(".", outdir=outdir, runner=testRunner);
+var dirs =
+  [
+   ".",         // Include all normal tests in the parser test set
+   "parser/"    // Add specific parser-only tests
+   ];
 
-// Add specific parser-only tests
-Testy.addToQueue("parser/", outdir=outdir, runner=testRunner);
+// Add to test queue
+Testy.addToQueue(dir=dirs, outdir=outdir, runner=testRunner);
